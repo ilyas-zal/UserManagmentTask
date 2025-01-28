@@ -15,7 +15,7 @@ services:
     env_file:
       - .env
     ports:
-      - "8092:8093"
+      - "8093:8093"
     command:
       - sh
       - -c
