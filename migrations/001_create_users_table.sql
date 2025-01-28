@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    balance INTEGER NOT NULL DEFAULT 0,
+    referrer_id INTEGER NULL,
+    CONSTRAINT fk_referrer FOREIGN KEY (referrer_id) REFERENCES users(id)
+);
