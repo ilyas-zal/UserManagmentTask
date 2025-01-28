@@ -1,4 +1,5 @@
-package handlers
+// database содержит функции для работы с базой данных.
+package database
 
 import (
 	"fmt"
@@ -7,10 +8,11 @@ import (
 	"github.com/ilyas-zal/UserManagmentTask/internal/models"
 )
 
+// SeedDB заполняет базу данных начальными данными: создает пользователей и задачи.
+// Функция создает 10 пользователей и 5 задач, а затем сохраняет их в базе данных.
 func SeedDB() error {
 	db := GetDB()
 
-	// Создаем пользователей
 	users := make([]*models.User, 10)
 	for i := 0; i < 10; i++ {
 		user := &models.User{
@@ -25,7 +27,6 @@ func SeedDB() error {
 		return err
 	}
 
-	// Создаем задачи
 	tasks := make([]*models.Task, 5)
 	for i := 0; i < 5; i++ {
 		task := &models.Task{

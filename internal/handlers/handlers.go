@@ -1,3 +1,4 @@
+// handlers содержит функции для работы с эндпоинтами.
 package handlers
 
 import (
@@ -5,13 +6,16 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/ilyas-zal/UserManagmentTask/internal/database"
 	"github.com/ilyas-zal/UserManagmentTask/internal/middlewares"
 	"github.com/ilyas-zal/UserManagmentTask/internal/models"
 )
 
+// Auth производит аутентификацию пользователя и возвращает токен авторизации.
 func Auth(w http.ResponseWriter, r *http.Request) {
 	var user struct {
-		ID uint `json:"user_id"`
+		UserID uint   `json:"user_id"`
+		Email  string `json:"user_email"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
@@ -19,16 +23,14 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Проверяем пользователя в базе данных
 	var dbUser models.User
-	db := GetDB()
-	db.First(&dbUser, user.ID)
-	if dbUser.ID == 0 {
-		http.Error(w, "Пользователь не найден", http.StatusUnauthorized)
+	db := database.GetDB()
+	db.First(&dbUser, user.UserID)
+	if dbUser.ID == 0 || dbUser.Email != user.Email {
+		http.Error(w, "Пользователь не найден или неверная почта", http.StatusUnauthorized)
 		return
 	}
 
-	// Генерируем токен
 	token, err := middlewares.GenerateToken(dbUser.ID)
 	if err != nil {
 		http.Error(w, "Ошибка генерации токена", http.StatusInternalServerError)
@@ -38,10 +40,11 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
 
+// GetUserStatus возвращает информацию о пользователе по его ID.
 func GetUserStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	db := GetDB()
+	db := database.GetDB()
 	var user models.User
 	db.First(&user, id)
 	if user.ID == 0 {
@@ -51,9 +54,10 @@ func GetUserStatus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// GetLeaderboard возвращает список пользователей, отсортированных по балансу JSON-формате.
 func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
 	var users []models.User
-	db := GetDB()
+	db := database.GetDB()
 	db.Order("balance DESC").Find(&users)
 	if len(users) == 0 {
 		http.Error(w, "Список пользователей пуст", http.StatusNotFound)
@@ -62,10 +66,11 @@ func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(users)
 }
 
+// CompleteTask производит проверку и выполнение задания пользователем.
 func CompleteTask(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	db := GetDB()
+	db := database.GetDB()
 	var user models.User
 	db.First(&user, id)
 	if user.ID == 0 {
@@ -106,10 +111,11 @@ func CompleteTask(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// SetReferrer устанавливает и награждает пригласившего(реферера) для пользователя.
 func SetReferrer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	db := GetDB()
+	db := database.GetDB()
 	var user models.User
 	db.First(&user, id)
 	if user.ID == 0 {
@@ -132,7 +138,6 @@ func SetReferrer(w http.ResponseWriter, r *http.Request) {
 	}
 	user.ReferrerID = &referrerID.ReferrerID
 	db.Save(&user)
-	// начисляем награду рефереру
 	referrer.Balance += 300
 	db.Save(&referrer)
 	json.NewEncoder(w).Encode(user)

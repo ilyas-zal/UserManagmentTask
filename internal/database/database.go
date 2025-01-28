@@ -1,4 +1,5 @@
-package handlers
+// database содержит функции для работы с базой данных.
+package database
 
 import (
 	"log"
@@ -10,6 +11,8 @@ import (
 
 var db *gorm.DB
 
+// GetDB возвращает экземпляр базы данных GORM.
+// Если база данных не инициализирована, функция завершает выполнение с ошибкой.
 func GetDB() *gorm.DB {
 	if db == nil {
 		log.Fatal("База данных не инициализирована")
@@ -17,6 +20,7 @@ func GetDB() *gorm.DB {
 	return db
 }
 
+// InitDB инициализирует подключение к базе данных с использованием предоставленной строки подключения (DSN).
 func InitDB(dsn string) error {
 	var err error
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
