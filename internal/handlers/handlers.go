@@ -10,7 +10,9 @@ import (
 )
 
 func Auth(w http.ResponseWriter, r *http.Request) {
-	var user models.User
+	var user struct {
+		ID uint `json:"user_id"`
+	}
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		http.Error(w, "Неправильный запрос", http.StatusBadRequest)
@@ -70,20 +72,35 @@ func CompleteTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Пользователь не найден", http.StatusNotFound)
 		return
 	}
+	var taskID struct {
+		TaskID uint `json:"task_id"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&taskID)
+	if err != nil {
+		http.Error(w, "Неправильный запрос", http.StatusBadRequest)
+		return
+	}
 	var task models.Task
-	db.First(&task, 1) // Для примера берем первую задачу
+	db.First(&task, taskID.TaskID)
 	if task.ID == 0 {
 		http.Error(w, "Задание не найдено", http.StatusNotFound)
 		return
 	}
 	var userTask models.UserTask
-	db.First(&userTask, "user_id = ? AND task_id = ?", user.ID, task.ID)
-	if userTask.Completed {
+	db.First(&userTask, "user_id = ? AND task_id = ?", user.ID, taskID.TaskID)
+	if userTask.ID != 0 && userTask.Completed {
 		http.Error(w, "Задание уже выполнено", http.StatusBadRequest)
 		return
 	}
-	userTask.Completed = true
-	db.Save(&userTask)
+	if userTask.ID == 0 {
+		userTask.UserID = user.ID
+		userTask.TaskID = taskID.TaskID
+		userTask.Completed = true
+		db.Create(&userTask)
+	} else {
+		userTask.Completed = true
+		db.Save(&userTask)
+	}
 	user.Balance += task.Reward
 	db.Save(&user)
 	json.NewEncoder(w).Encode(user)
@@ -99,19 +116,24 @@ func SetReferrer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Пользователь не найден", http.StatusNotFound)
 		return
 	}
-	var referrerID uint
+	var referrerID struct {
+		ReferrerID uint `json:"referrer_id"`
+	}
 	err := json.NewDecoder(r.Body).Decode(&referrerID)
 	if err != nil {
 		http.Error(w, "Неправильный запрос", http.StatusBadRequest)
 		return
 	}
 	var referrer models.User
-	db.First(&referrer, referrerID)
+	db.First(&referrer, referrerID.ReferrerID)
 	if referrer.ID == 0 {
 		http.Error(w, "Реферер не найден", http.StatusNotFound)
 		return
 	}
-	user.ReferrerID = &referrerID
+	user.ReferrerID = &referrerID.ReferrerID
 	db.Save(&user)
+	// начисляем награду рефереру
+	referrer.Balance += 300
+	db.Save(&referrer)
 	json.NewEncoder(w).Encode(user)
 }
