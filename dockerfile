@@ -8,6 +8,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 
 # Устанавливаем зависимости
+RUN go mod tidy
 RUN go mod download
 
 # Копируем остальные файлы

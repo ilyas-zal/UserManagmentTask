@@ -3,10 +3,8 @@ version: '3'
 services:
   db:
     build: ./db
-    environment:
-      - POSTGRES_USER=myuser
-      - POSTGRES_PASSWORD=mypassword
-      - POSTGRES_DB=mydb
+    env_file:
+      - .env
     ports:
       - "4455:4455"
 
@@ -14,8 +12,8 @@ services:
     build: .
     depends_on:
       - db
-    environment:
-      - DB_DSN=host=usermanagmenttask_db user=myuser password=mypassword dbname=mydb port=4455 sslmode=disable
+    env_file:
+      - .env
     ports:
       - "8092:8093"
     command:

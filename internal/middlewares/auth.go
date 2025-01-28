@@ -14,5 +14,9 @@ func GenerateToken(userID uint) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte("secret_key"))
+	signedToken, err := token.SignedString([]byte("denet_secret_key_here"))
+	if err != nil {
+		return "", err
+	}
+	return signedToken, nil
 }

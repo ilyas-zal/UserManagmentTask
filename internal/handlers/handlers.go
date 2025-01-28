@@ -42,6 +42,10 @@ func GetUserStatus(w http.ResponseWriter, r *http.Request) {
 	db := GetDB()
 	var user models.User
 	db.First(&user, id)
+	if user.ID == 0 {
+		http.Error(w, "Пользователь не найден", http.StatusNotFound)
+		return
+	}
 	json.NewEncoder(w).Encode(user)
 }
 
@@ -49,6 +53,10 @@ func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
 	var users []models.User
 	db := GetDB()
 	db.Order("balance DESC").Find(&users)
+	if len(users) == 0 {
+		http.Error(w, "Список пользователей пуст", http.StatusNotFound)
+		return
+	}
 	json.NewEncoder(w).Encode(users)
 }
 
@@ -58,8 +66,16 @@ func CompleteTask(w http.ResponseWriter, r *http.Request) {
 	db := GetDB()
 	var user models.User
 	db.First(&user, id)
+	if user.ID == 0 {
+		http.Error(w, "Пользователь не найден", http.StatusNotFound)
+		return
+	}
 	var task models.Task
 	db.First(&task, 1) // Для примера берем первую задачу
+	if task.ID == 0 {
+		http.Error(w, "Задание не найдено", http.StatusNotFound)
+		return
+	}
 	var userTask models.UserTask
 	db.First(&userTask, "user_id = ? AND task_id = ?", user.ID, task.ID)
 	if userTask.Completed {
@@ -79,10 +95,22 @@ func SetReferrer(w http.ResponseWriter, r *http.Request) {
 	db := GetDB()
 	var user models.User
 	db.First(&user, id)
+	if user.ID == 0 {
+		http.Error(w, "Пользователь не найден", http.StatusNotFound)
+		return
+	}
 	var referrerID uint
-	json.NewDecoder(r.Body).Decode(&referrerID)
+	err := json.NewDecoder(r.Body).Decode(&referrerID)
+	if err != nil {
+		http.Error(w, "Неправильный запрос", http.StatusBadRequest)
+		return
+	}
 	var referrer models.User
 	db.First(&referrer, referrerID)
+	if referrer.ID == 0 {
+		http.Error(w, "Реферер не найден", http.StatusNotFound)
+		return
+	}
 	user.ReferrerID = &referrerID
 	db.Save(&user)
 	json.NewEncoder(w).Encode(user)
