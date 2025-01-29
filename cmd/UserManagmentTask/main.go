@@ -45,6 +45,9 @@ func main() {
 	router.HandleFunc("/users/{id}/task/complete", middlewares.AuthMiddleware(handlers.CompleteTask)).Methods("POST")
 	router.HandleFunc("/users/{id}/referrer", middlewares.AuthMiddleware(handlers.SetReferrer)).Methods("POST")
 	// router.Use(middlewares.AuthMiddleware) как альтернатива, если эндпоинтов будет сильно больше, но нужно добавить исключения. Лучше так сделать
+	//UPD: 2 новых эндпойнта для добавления нового пользователя и задач
+	router.HandleFunc("/registration", handlers.CreateUser).Methods("POST")
+	router.HandleFunc("/newtask", handlers.CreateTask).Methods("POST")
 
 	log.Println("Запуск сервера на :8093")
 	if err := http.ListenAndServe(":8093", router); err != nil {

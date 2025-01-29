@@ -142,3 +142,52 @@ func SetReferrer(w http.ResponseWriter, r *http.Request) {
 	db.Save(&referrer)
 	json.NewEncoder(w).Encode(user)
 }
+
+// CreateUser производит регистрацию нового пользователя.
+func CreateUser(w http.ResponseWriter, r *http.Request) {
+	var user struct {
+		Name  string `json:"user_name"`
+		Email string `json:"user_email"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, "Неправильный запрос", http.StatusBadRequest)
+		return
+	}
+
+	db := database.GetDB()
+	var existingUser models.User
+	db.Where("email = ?", user.Email).First(&existingUser)
+	if existingUser.ID != 0 {
+		http.Error(w, "Пользователь с такой почтой уже существует", http.StatusBadRequest)
+		return
+	}
+
+	newUser := models.User{
+		Name:  user.Name,
+		Email: user.Email,
+	}
+	db.Create(&newUser)
+	json.NewEncoder(w).Encode(newUser)
+}
+
+// CreateTask производит создание новой задачи.
+func CreateTask(w http.ResponseWriter, r *http.Request) {
+	var task struct {
+		Description string `json:"task_description"`
+		Reward      int    `json:"task_reward"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&task)
+	if err != nil {
+		http.Error(w, "Неправильный запрос", http.StatusBadRequest)
+		return
+	}
+
+	db := database.GetDB()
+	newTask := models.Task{
+		Description: task.Description,
+		Reward:      task.Reward,
+	}
+	db.Create(&newTask)
+	json.NewEncoder(w).Encode(newTask)
+}
